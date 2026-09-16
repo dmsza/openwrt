@@ -429,7 +429,7 @@ new file mode 100644
 index 0000000..c4752f2
 --- /dev/null
 +++ b/drivers/net/dsa/realtek/rtl8366ub_dsa.c
-@@ -0,0 +1,993 @@
+@@ -0,0 +1,1001 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * This is a sparsely documented chip, the only viable documentation seems
@@ -728,6 +728,14 @@ index 0000000..c4752f2
 +    if (ret)
 +        return dev_err_probe(priv->dev, ret,
 +                             "failed to clear CPU VLAN egress overrides\n");
++
++    /* Every frame the tagger emits is VLAN-tagged; never classify a
++     * stray untagged conduit frame by the CPU PVID.
++     */
++    ret = rtl8366ub_vlan_set_accept_tagged_only(priv, priv->cpu_port, true);
++    if (ret)
++        return dev_err_probe(priv->dev, ret,
++                             "failed to set CPU port tagged-only\n");
 +
 +    ret = rtl8366ub_vlan_get_egress_mode(priv, priv->cpu_port,
 +                                         &egress_mode);
@@ -2813,7 +2821,7 @@ new file mode 100644
 index 0000000..bf40d83
 --- /dev/null
 +++ b/drivers/net/dsa/realtek/rtl8366ub_switch.c
-@@ -0,0 +1,430 @@
+@@ -0,0 +1,433 @@
 +// SPDX-License-Identifier: GPL-2.0
 +
 +#include <linux/bitfield.h>
@@ -3207,8 +3215,11 @@ index 0000000..bf40d83
 +int rtl8366ub_switch_init(struct rtl8366ub_priv *priv)
 +{
 +    struct rtl8366ub_vlan vlan = {
-+        .member = RTL8366UB_VALID_PHYSICAL_MASK,
-+        .untag = RTL8366UB_VALID_PHYSICAL_MASK,
++        /* No data VLAN may be reachable through a default PVID; the
++         * bridge's default_pvid 1 populates this per port.
++         */
++        .member = 0,
++        .untag = 0,
 +        .ivl = false,
 +    };
 +    int port;

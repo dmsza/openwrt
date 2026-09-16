@@ -23,7 +23,7 @@ index e667b46..5a470b0 100644
  #define DSA_TAG_PROTO_BRCM_LEGACY_FCS_VALUE	29
  #define DSA_TAG_PROTO_MXL862_VALUE		30
  #define DSA_TAG_PROTO_MXL862_8021Q_VALUE	31
-+#define DSA_TAG_PROTO_RTL8366UB_8021Q_VALUE	32
++#define DSA_TAG_PROTO_RTL8366UB_8021Q_VALUE	200
  
  enum dsa_tag_protocol {
  	DSA_TAG_PROTO_NONE		= DSA_TAG_PROTO_NONE_VALUE,
@@ -79,7 +79,7 @@ diff --git a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/
  			data |= TX_DMA_SPTAG_V3;
  	}
  	WRITE_ONCE(desc->txd5, data);
-@@ -3767,12 +3768,13 @@ static void mtk_gdm_config(struct mtk_eth *eth, u32 id, u32 config)
+@@ -3767,13 +3768,14 @@ static void mtk_gdm_config(struct mtk_eth *eth, u32 id, u32 config)
  
  	/* default setup the forward port to send frame to PDMA */
 -	val &= ~0xffff;
