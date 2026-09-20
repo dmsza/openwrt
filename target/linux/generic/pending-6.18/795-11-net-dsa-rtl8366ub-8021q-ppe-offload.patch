@@ -19,11 +19,14 @@ diff --git a/include/net/dsa.h b/include/net/dsa.h
 index e667b46..5a470b0 100644
 --- a/include/net/dsa.h
 +++ b/include/net/dsa.h
-@@ -57,6 +57,7 @@ struct tc_action;
+@@ -57,6 +57,10 @@ struct tc_action;
  #define DSA_TAG_PROTO_BRCM_LEGACY_FCS_VALUE	29
  #define DSA_TAG_PROTO_MXL862_VALUE		30
  #define DSA_TAG_PROTO_MXL862_8021Q_VALUE	31
-+#define DSA_TAG_PROTO_RTL8366UB_8021Q_VALUE	32
++/* Out-of-tree tagger: stay clear of the upstream sequence (v7.0 uses
++ * 30-32, master is at 35). Proper fix: get an id assigned on netdev.
++ */
++#define DSA_TAG_PROTO_RTL8366UB_8021Q_VALUE	200
  
  enum dsa_tag_protocol {
  	DSA_TAG_PROTO_NONE		= DSA_TAG_PROTO_NONE_VALUE,
@@ -79,7 +82,7 @@ diff --git a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/
  			data |= TX_DMA_SPTAG_V3;
  	}
  	WRITE_ONCE(desc->txd5, data);
-@@ -3767,12 +3768,13 @@ static void mtk_gdm_config(struct mtk_eth *eth, u32 id, u32 config)
+@@ -3767,13 +3768,14 @@ static void mtk_gdm_config(struct mtk_eth *eth, u32 id, u32 config)
  
  	/* default setup the forward port to send frame to PDMA */
 -	val &= ~0xffff;
