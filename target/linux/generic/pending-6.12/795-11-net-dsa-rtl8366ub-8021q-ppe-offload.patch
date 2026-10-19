@@ -96,10 +96,11 @@ diff --git a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c b/drivers/net/ether
 index df53e16..36944d2 100644
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -10,6 +10,7 @@
+@@ -10,6 +10,8 @@
  #include <net/flow_offload.h>
  #include <net/pkt_cls.h>
  #include <net/dsa.h>
++#include <linux/if_bridge.h>
 +#include <linux/dsa/8021q.h>
  #include "mtk_eth_soc.h"
  #include "mtk_wed.h"
@@ -113,7 +114,7 @@ index df53e16..36944d2 100644
  {
  #if IS_ENABLED(CONFIG_NET_DSA)
  	struct dsa_port *dp;
-@@ -176,8 +177,23 @@
+@@ -176,8 +177,31 @@
  	if (IS_ERR(dp))
  		return -ENODEV;
  
@@ -125,11 +126,19 @@ index df53e16..36944d2 100644
 +		if (push_vid) {
 +			struct net_device *br = dsa_port_bridge_dev_get(dp);
 +
-+			if (br)
++			if (br) {
++				/* The tagger leaves VLAN-aware bridge egress
++				 * untagged. The PPE cannot replace the required
++				 * egress VLAN with this management VID.
++				 */
++				if (br_vlan_enabled(br))
++					return -EOPNOTSUPP;
++
 +				*push_vid = dsa_tag_8021q_bridge_vid(
 +					dsa_port_bridge_num_get(dp));
-+			else
++			} else {
 +				*push_vid = dsa_tag_8021q_standalone_vid(dp);
++			}
 +		}
 +		break;
 +	default:
@@ -147,16 +156,18 @@ index df53e16..36944d2 100644
  
  	if (mtk_flow_get_wdma_info(dev, dest_mac, &info) == 0) {
  		mtk_foe_entry_set_wdma(eth, foe, info.wdma_idx, info.queue,
-@@ -219,7 +237,7 @@
+@@ -219,7 +237,9 @@
  		goto out;
  	}
  
 -	dsa_port = mtk_flow_get_dsa_port(&dev);
 +	dsa_port = mtk_flow_get_dsa_port(&dev, &push_vid);
++	if (dsa_port == -EOPNOTSUPP)
++		return dsa_port;
  
  	if (dev == eth->netdev[0])
  		pse_port = PSE_GDM1_PORT;
-@@ -231,7 +249,13 @@
+@@ -231,7 +251,13 @@
  		return -EOPNOTSUPP;
  
  	if (dsa_port >= 0) {
